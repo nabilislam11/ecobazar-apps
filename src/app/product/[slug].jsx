@@ -14,13 +14,13 @@ import {
   View,
 } from 'react-native';
 
-import ProductGrid from '../../../components/(ecoommerce)/productGrid';
-import Rating from '../../../components/(ecoommerce)/Rating';
-import { useCart } from '../../../context/CartContext';
-import { useWishlist } from '../../../context/WishlistContext';
-import * as productService from '../../../service/productService';
-import * as reviewService from '../../../service/reviewService';
-import { getImageUrl, getMainImage } from '../../../utils/imageUtils';
+import ProductGrid from '../../components/(ecoommerce)/productGrid';
+import Rating from '../../components/(ecoommerce)/Rating';
+import { useCart } from '../../context/CartContext';
+import { useWishlist } from '../../context/WishlistContext';
+import * as productService from '../../service/productService';
+import * as reviewService from '../../service/review';
+import { getImageUrl, getMainImage } from '../../utils/imageUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -246,9 +246,6 @@ export default function ProductDetails() {
 
           <View style={styles.row}>
             <Rating value={product.rating || 0} count={product.reviewCount} />
-            {!!product.sku && (
-              <Text style={styles.sku}>SKU: {product.sku}</Text>
-            )}
           </View>
 
           <View style={styles.priceRow}>
@@ -275,6 +272,9 @@ export default function ProductDetails() {
               {inStock ? `${product.stock} available` : 'Out of stock'}
             </Text>
           </Text>
+          {!!product.sku && (
+            <Text style={styles.sku}>SKU: {product.sku}</Text>
+          )}
 
           {/* Qty + Cart */}
           <View style={styles.actionRow}>

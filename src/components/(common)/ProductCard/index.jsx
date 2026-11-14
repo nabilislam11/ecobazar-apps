@@ -1,7 +1,16 @@
 // src/components/ecommerce/ProductCard.jsx
-import { View, Text, Image, Pressable, Alert, StyleSheet } from 'react-native';
-import { Link } from 'expo-router';
-import { Heart, ShoppingBag, Eye } from 'lucide-react-native';
+// অথবা তোমার পাথ: components/(ecoommerce)/ProductCard.jsx
+
+import { useRouter } from 'expo-router';
+import { Eye, Heart, ShoppingBag } from 'lucide-react-native';
+import {
+    Alert,
+    Image,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 
 import Rating from '../../(ecoommerce)/Rating';
 import { useCart } from '../../../context/CartContext';
@@ -18,7 +27,8 @@ function resolveImageUrl(product) {
 
     const mainImage =
         product.images.find(
-            (img) => img.isMain === true || img.isMain === 'true' || img.isMain === 1
+            (img) =>
+                img.isMain === true || img.isMain === 'true' || img.isMain === 1
         ) || product.images[0];
 
     const raw =
@@ -28,7 +38,9 @@ function resolveImageUrl(product) {
         mainImage?.src ||
         (typeof mainImage === 'string' ? mainImage : null);
 
-    if (!raw) return 'https://via.placeholder.com/300?text=No+Image';
+    if (!raw) {
+        return 'https://via.placeholder.com/300?text=No+Image';
+    }
 
     if (raw.startsWith('http://') || raw.startsWith('https://')) {
         return raw;
@@ -39,6 +51,7 @@ function resolveImageUrl(product) {
 }
 
 export default function ProductCard({ product }) {
+    const router = useRouter();
     const { addItem } = useCart();
     const { toggleItem, isWishlisted } = useWishlist();
 
@@ -53,46 +66,71 @@ export default function ProductCard({ product }) {
     const wishlisted = isWishlisted(product._id);
     const imageUrl = resolveImageUrl(product);
 
+    const goToDetails = () => {
+        if (!product.slug) {
+            console.log('NO SLUG:', product._id, product.title);
+            Alert.alert('Error', 'Product slug not found');
+            return;
+        }
+        console.log('Navigate to:', `/product/${product.slug}`);
+        router.push(`/product/${product.slug}`);
+    };
+
+    const onWishlist = () => {
+        toggleItem(product);
+    };
+
+    const onAddCart = () => {
+        try {
+            addItem(product._id);
+        } catch {
+            addItem(product);
+        }
+    };
+
     return (
         <View style={styles.card}>
-            <Link href={`/product/${product.slug}`} asChild>
-                <Pressable>
-                    {/* ===== Image (fixed height) ===== */}
-                    <View style={styles.imageWrap}>
-                        {product.discount > 0 && (
-                            <View style={styles.saleBadge}>
-                                <Text style={styles.saleText}>Sale {product.discount}%</Text>
-                            </View>
-                        )}
+            {/* পুরো কার্ড প্রেস → details */}
+            <Pressable onPress={goToDetails} style={styles.pressArea}>
+                {/* Image */}
+                <View style={styles.imageWrap}>
+                    {product.discount > 0 && (
+                        <View style={styles.saleBadge}>
+                            <Text style={styles.saleText}>Sale {product.discount}%</Text>
+                        </View>
+                    )}
 
-                        <Image
-                            source={{ uri: imageUrl }}
-                            style={styles.image}
-                            resizeMode="cover"
-                        />
-                    </View>
+                    <Image
+                        source={{ uri: imageUrl }}
+                        style={styles.image}
+                        resizeMode="cover"
+                    />
+                </View>
 
-                    {/* ===== Details ===== */}
-                    <View style={styles.info}>
-                        <Text numberOfLines={1} style={styles.title}>
-                            {product.title || product.name}
-                        </Text>
+                {/* Info */}
+                <View style={styles.info}>
+                    <Text numberOfLines={1} style={styles.title}>
+                        {product.title || product.name}
+                    </Text>
 
+                    <View style={styles.priceRow}>
                         <Text style={styles.price}>
                             ${Number(product.price || 0).toFixed(2)}
                         </Text>
-
-                        <Rating value={product.rating || 0} />
+                        {product.oldPrice > 0 && (
+                            <Text style={styles.oldPrice}>
+                                ${Number(product.oldPrice).toFixed(2)}
+                            </Text>
+                        )}
                     </View>
-                </Pressable>
-            </Link>
 
-            {/* Wishlist + Eye */}
+                    <Rating value={product.rating || 0} />
+                </View>
+            </Pressable>
+
+            {/* Wishlist + Eye — কার্ডের বাইরে আলাদা press */}
             <View style={styles.actionsTop}>
-                <Pressable
-                    onPress={() => toggleItem(product)}
-                    style={styles.iconBtn}
-                >
+                <Pressable onPress={onWishlist} style={styles.iconBtn} hitSlop={8}>
                     <Heart
                         size={15}
                         color={wishlisted ? '#ef4444' : '#374151'}
@@ -103,16 +141,14 @@ export default function ProductCard({ product }) {
                 <Pressable
                     onPress={() => Alert.alert('Notice', 'Quick view coming soon')}
                     style={styles.iconBtn}
+                    hitSlop={8}
                 >
                     <Eye size={15} color="#374151" />
                 </Pressable>
             </View>
 
             {/* Add to Cart */}
-            <Pressable
-                onPress={() => addItem(product._id)}
-                style={styles.cartBtn}
-            >
+            <Pressable onPress={onAddCart} style={styles.cartBtn} hitSlop={8}>
                 <ShoppingBag size={16} color="#fff" />
             </Pressable>
         </View>
@@ -126,13 +162,17 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         borderWidth: 1,
         borderColor: '#f3f4f6',
-        overflow: 'hidden', // খুব জরুরি
+        overflow: 'hidden',
+        position: 'relative',
+    },
+    pressArea: {
+        width: '100%',
     },
 
-    // ===== ইমেজ ফিক্সড সাইজ =====
+    // ইমেজ ফিক্সড হাইট — লেআউট ভাঙবে না
     imageWrap: {
         width: '100%',
-        height: 140,          // ← চাইলে 130 / 150 করো
+        height: 140,
         backgroundColor: '#f9fafb',
         overflow: 'hidden',
         position: 'relative',
@@ -168,10 +208,20 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#374151',
     },
+    priceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
     price: {
         fontSize: 15,
         fontWeight: '600',
         color: '#111',
+    },
+    oldPrice: {
+        fontSize: 12,
+        color: '#9ca3af',
+        textDecorationLine: 'line-through',
     },
 
     actionsTop: {
@@ -179,6 +229,7 @@ const styles = StyleSheet.create({
         right: 8,
         top: 8,
         gap: 6,
+        zIndex: 20,
     },
     iconBtn: {
         width: 30,
@@ -204,6 +255,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 3,
+        zIndex: 20,
     },
 
     loadingBox: {

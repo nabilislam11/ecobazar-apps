@@ -1,32 +1,31 @@
-import React, { useEffect, useState, useRef } from 'react';
 import {
-    View,
-    Text,
-    Image,
-    ScrollView,
-    TouchableOpacity,
-    FlatList,
-    Dimensions,
-    ActivityIndicator,
-    StyleSheet,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import {
-    Truck,
-    Headphones,
-    ShieldCheck,
-    PackageCheck,
+    ChevronRight as ArrowRight,
     ChevronLeft,
     ChevronRight,
-    ChevronRight as ArrowRight,
+    Headphones,
+    PackageCheck,
+    ShieldCheck,
+    Truck,
 } from 'lucide-react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+    ActivityIndicator,
+    Dimensions,
+    FlatList,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
-import { getImageUrl, getMainImage } from '../../../utils/imageUtils';
-import * as productService from '../../../service/productService';
-import * as categoryService from '../../../service/categoryService';
+import { useRouter } from 'expo-router';
+import Header from '../../../components/(common)/Header';
 import ProductGrid from '../../../components/(ecoommerce)/productGrid';
-import CategoryCard from '../../../components/(ecoommerce)/CategoryCard';
-import Button from '../../../components/(common)/Button';
+import * as categoryService from '../../../service/categoryService';
+import * as productService from '../../../service/productService';
+import { getImageUrl, getMainImage } from '../../../utils/imageUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -37,7 +36,23 @@ const features = [
     { icon: PackageCheck, title: 'Money-Back Guarantee', desc: '30 Days Money-Back Guarantee' },
 ];
 
+// Shop page যে params পড়ে: category, section, view, brand, q
+// প্রতিবার সবগুলো পাঠাই (খালি string দিয়ে), যাতে আগের filter থেকে না যায়
+const EMPTY_SHOP_PARAMS = {
+    category: '',
+    section: '',
+    view: '',
+    brand: '',
+    q: '',
+};
+
 export default function Home() {
+    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+        <Header />
+
+        {/* তোমার আগের Home screen content */}
+    </View>
+
     const router = useRouter();
 
     const [featured, setFeatured] = useState([]);
@@ -93,31 +108,35 @@ export default function Home() {
             });
     }, []);
 
-    // Navigation helpers (Expo Router)
+    // ==============================
+    // NAVIGATION HELPERS (Expo Router)
+    // ==============================
+
     const goToProduct = (slug) => {
         if (!slug) return;
-        router.push(`/product/${slug}`);
+        router.push({
+            pathname: '/product/[slug]',
+            params: { slug },
+        });
     };
 
-    const goToShop = () => {
-        router.push('/shop');
+    // shop tab-এ যাওয়ার একটাই function: tab হওয়ায় navigate ব্যবহার করেছি
+    const openShop = (params = {}) => {
+        router.navigate({
+            pathname: '/shop',
+            params: { ...EMPTY_SHOP_PARAMS, ...params },
+        });
     };
 
-    const goToAllProducts = (section) => {
-        // section পাঠালে Shop পেজে ফিল্টার করতে পারবে
-        if (section) {
-            router.push({ pathname: '/shop', params: { section } });
-        } else {
-            router.push('/shop');
-        }
-    };
+    const goToShop = () => openShop();
 
-    const goToAllCategories = () => {
-        router.push('/categories');
-    };
+    const goToAllProducts = (section) => openShop({ section });
 
-    const goToCategory = (idOrSlug) => {
-        router.push(`/category/${idOrSlug}`);
+    const goToAllCategories = () => openShop({ view: 'categories' });
+
+    const goToCategory = (category) => {
+        if (!category) return;
+        openShop({ category: String(category) });
     };
 
     const renderSliderItem = ({ item }) => (
@@ -160,7 +179,7 @@ export default function Home() {
         </TouchableOpacity>
     );
 
-    // Category item (সুন্দর করে)
+    // Category item
     const renderCategoryItem = ({ item }) => {
         const imageUri =
             item.image || item.icon
@@ -171,6 +190,7 @@ export default function Home() {
             <TouchableOpacity
                 style={styles.categoryCard}
                 activeOpacity={0.8}
+                // shop পেজ _id / slug / id তিনটাই চেনে
                 onPress={() => goToCategory(item.slug || item._id || item.id)}
             >
                 <View style={styles.categoryImageWrap}>
@@ -197,6 +217,7 @@ export default function Home() {
 
     return (
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+            <Header />
             {/* Hero Slider + Ads */}
             <View style={styles.heroSection}>
                 <View style={styles.sliderWrapper}>
@@ -307,8 +328,10 @@ export default function Home() {
 
                 {categories.length > 0 ? (
                     <FlatList
-                        data={categories.slice(0, 6)} // হোমে ৬টা দেখাব
-                        keyExtractor={(item) => String(item.id || item._id)}
+                        data={categories.slice(0, 6)}
+                        keyExtractor={(item, index) =>
+                            String(item._id || item.id || item.slug || index)
+                        }
                         numColumns={3}
                         scrollEnabled={false}
                         columnWrapperStyle={styles.categoryRow}
@@ -327,7 +350,7 @@ export default function Home() {
                     seeAllText="See All"
                 />
                 <ProductGrid
-                    products={todaysDeal.slice(0, 4)} // ২ কলাম × ২ রো
+                    products={todaysDeal.slice(0, 4)}
                     loading={loading}
                     columns={2}
                 />
@@ -420,324 +443,171 @@ function SectionHeading({ title, onSeeAll, seeAllText = 'See All', center }) {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
-    heroSection: {
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 8,
-    },
+    container: { flex: 1, backgroundColor: '#ffffff' },
+
+    heroSection: { paddingHorizontal: 16, paddingTop: 16 },
+
     sliderWrapper: {
-        backgroundColor: 'rgba(22, 163, 74, 0.1)',
-        borderRadius: 12,
+        width: '100%',
+        height: 220,
+        borderRadius: 16,
         overflow: 'hidden',
-        minHeight: 380,
-        marginBottom: 12,
+        backgroundColor: '#f0fdf4',
+        position: 'relative',
     },
-    sliderItem: {
-        width: SCREEN_WIDTH - 32,
-    },
-    sliderContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 20,
-        minHeight: 380,
-    },
-    sliderInfo: {
-        flex: 1,
-        paddingRight: 12,
-    },
-    featuredLabel: {
-        fontSize: 13,
-        fontWeight: '500',
-        color: '#15803d',
-        marginBottom: 8,
-    },
-    sliderTitle: {
-        fontSize: 22,
-        fontWeight: '600',
-        color: '#111',
-        marginBottom: 10,
-        lineHeight: 28,
-    },
-    sliderDesc: {
-        fontSize: 13,
-        color: '#4b5563',
-        marginBottom: 16,
-        lineHeight: 18,
-    },
+    sliderItem: { width: SCREEN_WIDTH - 32, height: 220, padding: 16 },
+    sliderContent: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+    sliderInfo: { flex: 1, paddingRight: 8 },
+    featuredLabel: { color: '#16a34a', fontSize: 12, fontWeight: '700', marginBottom: 8 },
+    sliderTitle: { color: '#111827', fontSize: 20, fontWeight: '700', marginBottom: 8 },
+    sliderDesc: { color: '#6b7280', fontSize: 12, lineHeight: 18, marginBottom: 12 },
     shopNowBtn: {
         backgroundColor: '#16a34a',
-        paddingHorizontal: 18,
-        paddingVertical: 10,
-        borderRadius: 6,
+        paddingHorizontal: 14,
+        paddingVertical: 9,
+        borderRadius: 8,
         alignSelf: 'flex-start',
-        marginBottom: 12,
     },
-    shopNowText: {
-        color: '#fff',
-        fontSize: 13,
-        fontWeight: '500',
-    },
-    sliderPrice: {
-        fontSize: 22,
-        fontWeight: '600',
-        color: '#111',
-    },
+    shopNowText: { color: '#ffffff', fontSize: 12, fontWeight: '700' },
+    sliderPrice: { color: '#111827', fontSize: 16, fontWeight: '700', marginTop: 10 },
     sliderImageWrap: {
-        width: 140,
-        height: 200,
+        width: '42%',
+        height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    sliderImage: {
-        width: '100%',
-        height: '100%',
-    },
-    noImage: {
-        color: '#9ca3af',
-        fontSize: 12,
-    },
+    sliderImage: { width: '100%', height: '100%' },
+    noImage: { color: '#9ca3af', fontSize: 11, textAlign: 'center' },
+
     navBtn: {
         position: 'absolute',
         top: '45%',
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: '#fff',
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#ffffff',
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
     },
-    navLeft: { left: 10 },
-    navRight: { right: 10 },
+    navLeft: { left: 8 },
+    navRight: { right: 8 },
+
     dots: {
         position: 'absolute',
-        bottom: 14,
+        bottom: 8,
         left: 0,
         right: 0,
         flexDirection: 'row',
         justifyContent: 'center',
+        alignItems: 'center',
         gap: 6,
     },
-    dot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-    },
-    dotActive: { backgroundColor: '#16a34a' },
+    dot: { width: 7, height: 7, borderRadius: 4 },
+    dotActive: { backgroundColor: '#16a34a', width: 18 },
     dotInactive: { backgroundColor: '#d1d5db' },
-    sliderLoading: {
-        height: 380,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    loadingText: {
-        marginTop: 10,
-        color: '#9ca3af',
-    },
-    adsColumn: {
-        gap: 12,
-    },
+
+    sliderLoading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    loadingText: { color: '#6b7280', fontSize: 13, marginTop: 10 },
+
+    adsColumn: { flexDirection: 'row', gap: 12, paddingHorizontal: 16, marginTop: 16 },
     adCard: {
-        backgroundColor: '#f9fafb',
-        borderRadius: 12,
-        padding: 20,
-        minHeight: 140,
+        flex: 1,
+        minHeight: 150,
+        padding: 14,
+        borderRadius: 14,
+        backgroundColor: '#fef3c7',
         justifyContent: 'center',
     },
-    adLabel: {
-        fontSize: 11,
-        fontWeight: '500',
-        color: '#16a34a',
-        marginBottom: 6,
-    },
-    adTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#111',
-        lineHeight: 24,
-    },
-    adSub: {
-        fontSize: 12,
-        color: '#9ca3af',
-        marginTop: 6,
-    },
-    adLink: {
-        marginTop: 10,
-        fontSize: 13,
-        fontWeight: '500',
-        color: '#16a34a',
-    },
+    adLabel: { color: '#92400e', fontSize: 11, fontWeight: '600', marginBottom: 6 },
+    adTitle: { color: '#78350f', fontSize: 17, fontWeight: '700', marginBottom: 8 },
+    adSub: { color: '#92400e', fontSize: 11, marginBottom: 10 },
+    adLink: { color: '#15803d', fontSize: 12, fontWeight: '700' },
+
     featuresStrip: {
-        borderTopWidth: 1,
-        borderBottomWidth: 1,
-        borderColor: '#f3f4f6',
-        paddingVertical: 16,
-        paddingHorizontal: 16,
         flexDirection: 'row',
         flexWrap: 'wrap',
+        paddingHorizontal: 16,
+        paddingVertical: 20,
         gap: 16,
     },
-    featureItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: '47%',
-        gap: 10,
-    },
-    featureText: {
-        flex: 1,
-    },
-    featureTitle: {
-        fontSize: 13,
-        fontWeight: '500',
-        color: '#111',
-    },
-    featureDesc: {
-        fontSize: 11,
-        color: '#9ca3af',
-        marginTop: 2,
-    },
-    section: {
-        paddingHorizontal: 16,
-        paddingVertical: 24,
-    },
-    grayBg: {
-        backgroundColor: '#f9fafb',
-    },
+    featureItem: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: 10 },
+    featureText: { flex: 1 },
+    featureTitle: { color: '#111827', fontSize: 12, fontWeight: '700' },
+    featureDesc: { color: '#6b7280', fontSize: 10, marginTop: 4 },
+
+    section: { paddingHorizontal: 16, paddingVertical: 20 },
+    grayBg: { backgroundColor: '#f9fafb' },
+
     sectionHeading: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         marginBottom: 16,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
     },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#111',
-    },
-    seeAllBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    seeAllText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#16a34a',
-    },
-    // Category styles
-    categoryRow: {
-        justifyContent: 'space-between',
-        marginBottom: 14,
-    },
+    sectionTitle: { color: '#111827', fontSize: 18, fontWeight: '700' },
+    seeAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    seeAllText: { color: '#16a34a', fontSize: 12, fontWeight: '600' },
+
+    categoryRow: { justifyContent: 'space-between', marginBottom: 12 },
     categoryCard: {
-        width: (SCREEN_WIDTH - 32 - 24) / 3, // 3 columns with gap
+        width: '31.5%',
         alignItems: 'center',
-        marginBottom: 8,
+        backgroundColor: '#ffffff',
+        borderRadius: 12,
+        padding: 10,
+        borderWidth: 1,
+        borderColor: '#f3f4f6',
     },
     categoryImageWrap: {
         width: 72,
         height: 72,
         borderRadius: 36,
-        backgroundColor: '#f0fdf4',
         overflow: 'hidden',
-        marginBottom: 8,
+        backgroundColor: '#f0fdf4',
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#dcfce7',
+        marginBottom: 8,
     },
-    categoryImage: {
-        width: '100%',
-        height: '100%',
-    },
+    categoryImage: { width: '100%', height: '100%' },
     categoryPlaceholder: {
         width: '100%',
         height: '100%',
-        backgroundColor: '#bbf7d0',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    categoryPlaceholderText: {
-        fontSize: 22,
-        fontWeight: '600',
-        color: '#15803d',
-    },
-    categoryName: {
-        fontSize: 12,
-        fontWeight: '500',
-        color: '#374151',
-        textAlign: 'center',
-    },
-    emptyText: {
-        textAlign: 'center',
-        color: '#9ca3af',
-        paddingVertical: 20,
-    },
-    // Discount
+    categoryPlaceholderText: { color: '#16a34a', fontSize: 24, fontWeight: '700' },
+    categoryName: { color: '#374151', fontSize: 12, fontWeight: '600', textAlign: 'center' },
+
+    emptyText: { color: '#9ca3af', fontSize: 13, textAlign: 'center', paddingVertical: 20 },
+
     discountBanner: {
-        backgroundColor: '#15803d',
-        borderRadius: 12,
-        padding: 20,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        backgroundColor: '#dcfce7',
+        padding: 16,
+        borderRadius: 14,
         gap: 12,
     },
-    discountLabel: {
-        fontSize: 13,
-        color: 'rgba(255,255,255,0.8)',
-        marginBottom: 4,
-    },
-    discountTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#fff',
-    },
+    discountLabel: { color: '#15803d', fontSize: 11, fontWeight: '600', marginBottom: 6 },
+    discountTitle: { color: '#166534', fontSize: 16, fontWeight: '700' },
     discountBtn: {
-        borderWidth: 1.5,
-        borderColor: '#fff',
-        paddingHorizontal: 16,
+        backgroundColor: '#16a34a',
+        paddingHorizontal: 14,
         paddingVertical: 10,
         borderRadius: 8,
     },
-    discountBtnText: {
-        color: '#fff',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    // Testimonials
-    testimonialList: {
-        gap: 12,
-    },
+    discountBtnText: { color: '#ffffff', fontSize: 11, fontWeight: '700' },
+
+    testimonialList: { gap: 12 },
     testimonialCard: {
-        backgroundColor: '#fff',
+        backgroundColor: '#ffffff',
+        padding: 16,
+        borderRadius: 12,
         borderWidth: 1,
         borderColor: '#f3f4f6',
-        borderRadius: 12,
-        padding: 20,
     },
-    testimonialText: {
-        fontSize: 13,
-        color: '#374151',
-        lineHeight: 20,
-        marginBottom: 12,
-    },
-    testimonialName: {
-        fontSize: 13,
-        fontWeight: '500',
-        color: '#111',
-    },
-    testimonialRole: {
-        fontSize: 11,
-        color: '#9ca3af',
-        marginTop: 2,
-    },
+    testimonialText: { color: '#4b5563', fontSize: 13, lineHeight: 20, marginBottom: 12 },
+    testimonialName: { color: '#111827', fontSize: 13, fontWeight: '700' },
+    testimonialRole: { color: '#9ca3af', fontSize: 11, marginTop: 3 },
 });

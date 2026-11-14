@@ -1,5 +1,5 @@
 // src/service/reviewService.js
-import api from "./api"; // তোমার axios/api instance যেখানে আছে
+import api from "../api"; // তোমার axios/api instance যেখানে আছে
 
 // কোনো প্রোডাক্টের সব রিভিউ
 export const getReviews = async (productId) => {
